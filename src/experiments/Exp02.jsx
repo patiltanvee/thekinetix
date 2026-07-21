@@ -331,7 +331,7 @@ function Simulation() {
   useEffect(() => {
     if (ringsRef.current) drawRingsCanvas(ringsRef.current, { R, bright, lambda, scopePos, rgb })
     if (zoomRef.current)  drawZoomCanvas(zoomRef.current,  { R, bright, lambda, scopePos, rgb, zoomLevel })
-  }, [R, bright, lambda, scopePos, zoomLevel])
+  }, [R, bright, lambda, scopePos, zoomLevel, rgb])
 
   // Scope drag on the lens element
   const onLensDrag = useCallback(e => {
@@ -347,7 +347,7 @@ function Simulation() {
       const track = document.getElementById('scopeTrack02')
       const trackW = track ? track.offsetWidth : 460
       const dcm = (e.clientX - dragStartX.current) / trackW * 3.0
-      setScopePos(p => Math.max(-1.5, Math.min(1.5, dragStartPos.current + dcm)))
+      setScopePos(Math.max(-1.5, Math.min(1.5, dragStartPos.current + dcm)))
     }
     const onUp = () => { dragging.current = false }
     window.addEventListener('mousemove', onMove)

@@ -98,7 +98,6 @@ function drawGraph(canvas, pairs) {
   ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, H-pad.b); ctx.lineTo(W-pad.r, H-pad.b); ctx.stroke()
 
   // Best-fit line through origin (r = slope × d)
-  const n = pairs.length
   const sxy = pairs.reduce((a, p) => a + p.d * p.r, 0)
   const sx2 = pairs.reduce((a, p) => a + p.d * p.d, 0)
   const slope = sxy / sx2   // tanθ = r/d

@@ -1,5 +1,5 @@
 // src/components/ScrollTop.jsx
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function ScrollTop() {
   const [show, setShow] = useState(false)

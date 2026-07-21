@@ -11,7 +11,7 @@ const V_STANDARD = 330   // m/s  (standard velocity of sound in air)
 // ═══════════════════════════════════════════════════════════════
 //  DRAW FUNCTION  (pure — takes canvas + state)
 // ═══════════════════════════════════════════════════════════════
-function drawUltraCanvas(canvas, { D, V, pulseX, state, dispD, dispT }) {
+function drawUltraCanvas(canvas, { D, pulseX, state, dispD, dispT }) {
   const ctx  = canvas.getContext('2d')
   const W    = canvas.width, H = canvas.height
   const meterX  = 60
@@ -202,8 +202,6 @@ function Simulation() {
 
   const [D,      setD]      = useState(0.5)    // metres
   const [V,      setV]      = useState(V_STANDARD)
-  const [state,  setState]  = useState('idle') // 'idle' | 'going' | 'echo'
-  const [pulseX, setPulseX] = useState(null)
   const [dispD,  setDispD]  = useState('—')
   const [dispT,  setDispT]  = useState('—')
 
@@ -213,11 +211,11 @@ function Simulation() {
   const [results, setResults] = useState(null)
   const [recRow, setRecRow]   = useState(0)
 
-  // Draw static scene whenever D/V changes (no pulse)
+  // Draw static scene whenever D/dispD/dispT changes
   useEffect(() => {
     if (canvasRef.current)
-      drawUltraCanvas(canvasRef.current, { D, V, pulseX: null, state: 'idle', dispD, dispT })
-  }, [D, V])
+      drawUltraCanvas(canvasRef.current, { D, pulseX: null, state: 'idle', dispD, dispT })
+  }, [D, dispD, dispT])
 
   // Emit pulse animation
   const emitPulse = useCallback(() => {
@@ -241,17 +239,14 @@ function Simulation() {
       let px
       if (frac <= 0.5) {
         px = (meterX + 22) + (frac * 2) * (wallX - meterX - 22)
-        setState('going')
       } else {
         px = wallX - ((frac - 0.5) * 2) * (wallX - meterX - 22)
-        setState('echo')
       }
-      drawUltraCanvas(cv, { D, V, pulseX: px, state: frac <= 0.5 ? 'going' : 'echo',
+      drawUltraCanvas(cv, { D, pulseX: px, state: frac <= 0.5 ? 'going' : 'echo',
                              dispD: '...', dispT: '...' })
       if (frac < 1) {
         animRef.current = requestAnimationFrame(step)
       } else {
-        setState('idle')
         const T = (2 * D / V) * 1000
         setDispD(D.toFixed(3) + ' m')
         setDispT(T.toFixed(2) + ' ms')
@@ -356,8 +351,8 @@ function Simulation() {
             <button className="btn-sm btn-accent" onClick={emitPulse}>▶ Emit Pulse</button>
             <button className="btn-sm btn-dim" onClick={() => {
               if (animRef.current) { cancelAnimationFrame(animRef.current); animRef.current = null }
-              setState('idle'); setDispD('—'); setDispT('—')
-              drawUltraCanvas(canvasRef.current, { D, V, pulseX: null, state: 'idle', dispD: '—', dispT: '—' })
+              setDispD('—'); setDispT('—')
+              drawUltraCanvas(canvasRef.current, { D, pulseX: null, state: 'idle', dispD: '—', dispT: '—' })
             }}>↺ Reset</button>
           </div>
         </div>
