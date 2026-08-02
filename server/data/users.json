@@ -1,0 +1,30 @@
+{
+  "s.patil@thekinetix.edu": {
+    "id": "s.patil@thekinetix.edu",
+    "password": "physics2026",
+    "role": "student",
+    "name": "S. Patil",
+    "created_at": "2026-08-02T02:38:14.932Z"
+  },
+  "t.patil@thekinetix.edu": {
+    "id": "t.patil@thekinetix.edu",
+    "password": "physics2026",
+    "role": "faculty",
+    "name": "T. Patil",
+    "created_at": "2026-08-02T02:38:14.933Z"
+  },
+  "sarveshrpiot125@gst.sies.edu.in": {
+    "id": "sarveshrpiot125@gst.sies.edu.in",
+    "password": "test123",
+    "role": "student",
+    "name": "PillaiSarveshX03",
+    "created_at": "2026-08-02T02:39:33.000Z"
+  },
+  "test123@gmail.com": {
+    "id": "test123@gmail.com",
+    "password": "testing123",
+    "role": "student",
+    "name": "Test 123",
+    "created_at": "2026-08-02T03:04:07.065Z"
+  }
+}

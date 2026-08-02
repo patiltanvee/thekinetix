@@ -61,12 +61,17 @@ export default function TheKinetixLogin({ onLoginSuccess, onBack, initialStep = 
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [submitted, setSubmitted] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Signup fields
   const [signUpName, setSignUpName] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpRole, setSignUpRole] = useState("student");
   const [signUpSuccess, setSignUpSuccess] = useState(false);
+  const [signUpPassword, setSignUpPassword] = useState("");
+  const [signUpLoading, setSignUpLoading] = useState(false);
+  const [signUpError, setSignUpError] = useState(null);
 
   const active = role ? ROLES[role] : null;
 
@@ -96,19 +101,58 @@ export default function TheKinetixLogin({ onLoginSuccess, onBack, initialStep = 
     }
   };
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted({ role, id });
-    setTimeout(() => {
-      if (onLoginSuccess) {
-        onLoginSuccess({ role, id });
+    setError(null);
+    setLoading(true);
+    try {
+      const resp = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, password, role })
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        setError(data?.error || 'Login failed')
+        setLoading(false)
+        return
       }
-    }, 1000);
+      setSubmitted({ role, id });
+      setLoading(false);
+      if (onLoginSuccess) onLoginSuccess({ role, id, token: data.token, user: data.user });
+    } catch (err) {
+      setError('Network error')
+      setLoading(false)
+    }
   };
 
   const handleSignUpSubmit = (e) => {
     e.preventDefault();
-    setSignUpSuccess(true);
+    setSignUpError(null);
+    setSignUpLoading(true);
+    (async () => {
+      try {
+        const resp = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: signUpEmail, password: signUpPassword, role: signUpRole, name: signUpName })
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+          setSignUpError(data?.error || 'Signup failed');
+          setSignUpLoading(false);
+          return;
+        }
+        setSignUpSuccess(true);
+        setSignUpLoading(false);
+        setSignUpName('');
+        setSignUpEmail('');
+        setSignUpPassword('');
+      } catch (err) {
+        setSignUpError('Network error');
+        setSignUpLoading(false);
+      }
+    })();
   };
 
   return (
@@ -658,7 +702,7 @@ export default function TheKinetixLogin({ onLoginSuccess, onBack, initialStep = 
               <label htmlFor="kx-id">{active.idLabel}</label>
               <input
                 id="kx-id"
-                type="text"
+                type="email"
                 value={id}
                 onChange={(e) => setId(e.target.value)}
                 placeholder={role === "student" ? "e.g. s.patil@thekinetix.edu" : "e.g. t.patil@thekinetix.edu"}
@@ -699,7 +743,15 @@ export default function TheKinetixLogin({ onLoginSuccess, onBack, initialStep = 
               </p>
             )}
 
-            <button type="submit" className="kx-submit">{active.cta}</button>
+            {error && (
+              <p className="kx-confirm" style={{ color: 'var(--danger)' }}>
+                {error}
+              </p>
+            )}
+
+            <button type="submit" className="kx-submit" disabled={loading}>
+              {loading ? 'Signing in...' : active.cta}
+            </button>
           </form>
         </div>
       )}
@@ -757,9 +809,27 @@ export default function TheKinetixLogin({ onLoginSuccess, onBack, initialStep = 
               />
             </div>
 
+            <div className="kx-field">
+              <label htmlFor="reg-pass">Password</label>
+              <input
+                id="reg-pass"
+                type="password"
+                value={signUpPassword}
+                onChange={(e) => setSignUpPassword(e.target.value)}
+                placeholder="Create a password"
+                required
+              />
+            </div>
+
             {signUpSuccess && (
               <p className="kx-confirm" style={{ color: "var(--success)" }}>
-                Request submitted successfully! Check your email.
+                User Created successfully.
+              </p>
+            )}
+
+            {signUpError && (
+              <p className="kx-confirm" style={{ color: "var(--danger)" }}>
+                {signUpError}
               </p>
             )}
 
@@ -769,8 +839,9 @@ export default function TheKinetixLogin({ onLoginSuccess, onBack, initialStep = 
               style={{
                 background: signUpRole === "student" ? "var(--accent)" : "var(--accent3)"
               }}
+              disabled={signUpLoading}
             >
-              Submit Request
+              {signUpLoading ? 'Submitting...' : 'Submit Request'}
             </button>
           </form>
         </div>
