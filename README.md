@@ -1,1 +1,1 @@
-# thekinetixpro
+# thekinetix
