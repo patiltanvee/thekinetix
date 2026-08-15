@@ -2529,4 +2529,89 @@ canvas#ringsCanvas{display:block;width:100%;max-width:800px;cursor:crosshair}
   }
 }
 
+/* Experiment 04 Custom Grid Layout & Dark Room Styles */
+.exp04-sim-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 28px;
+}
+
+@media(max-width: 990px) {
+  .exp04-sim-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dark-room-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  margin-bottom: 16px;
+}
+
+.dark-room-toggle:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.dark-room-toggle.active {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #38bdf8;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.15);
+}
+
+.dark-room-toggle.active:hover {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.sim-live-card.dark-room {
+  background: #0f172a;
+  border-color: #1e293b;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  transition: background-color 0.4s ease, border-color 0.4s ease;
+}
+
+.sim-live-card.dark-room .sim-live-title {
+  color: #e2e8f0;
+}
+
+.setup-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  color: #64748b;
+  font-size: 0.9rem;
+  margin-top: 10px;
+}
+
+.setup-placeholder-dark {
+  background: #0b0f19;
+  border-color: #1e293b;
+  color: #94a3b8;
+}
+
+
 

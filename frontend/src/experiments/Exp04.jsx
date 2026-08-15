@@ -386,6 +386,316 @@ function Theory({ setTab }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  PHYSICAL SETUP WORKBENCH COMPONENT (SVG-based)
+// ═══════════════════════════════════════════════════════════════
+function PhysicalSetup({ d, NA, isLightOn, setIsLightOn }) {
+  // Map distance d (5 to 30) to screen horizontal X coordinate
+  // tip is at x = 220. Scale: 6.0 pixels per mm.
+  const screenX = 220 + d * 6.0
+  const theta = Math.asin(Math.min(0.999, NA))
+  const rMm = d * Math.tan(theta)
+  // Spot radius on screen: scale is 1.6 px per mm
+  const rPx = Math.min(60, rMm * 1.6)
+
+  return (
+    <div style={{ position: 'relative', width: '100%', maxWidth: '580px', margin: '0 auto' }}>
+      <svg
+        viewBox="0 0 500 280"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{
+          width: '100%',
+          borderRadius: '12px',
+          background: isLightOn ? '#f8fafc' : '#090d16',
+          border: isLightOn ? '1px solid #e2e8f0' : '1px solid #1e293b',
+          transition: 'all 0.4s ease',
+          boxShadow: isLightOn ? 'inset 0 2px 4px rgba(0,0,0,0.02)' : 'inset 0 4px 20px rgba(0,0,0,0.5)'
+        }}
+      >
+        <defs>
+          {/* Laser beam / cone linear gradient */}
+          <linearGradient id="laserConeGrad" x1="0" y1="0.5" x2="1" y2="0.5">
+            <stop offset="0%" stopColor="#f97316" stopOpacity="0.85"/>
+            <stop offset="25%" stopColor="#f97316" stopOpacity="0.55"/>
+            <stop offset="85%" stopColor="#ea580c" stopOpacity="0.15"/>
+            <stop offset="100%" stopColor="#ea580c" stopOpacity="0.02"/>
+          </linearGradient>
+
+          {/* Glowing projected circle on tilted screen */}
+          <radialGradient id="glowingSpot" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#fef08a" stopOpacity="0.95"/>
+            <stop offset="35%" stopColor="#f97316" stopOpacity="0.8"/>
+            <stop offset="75%" stopColor="#ea580c" stopOpacity="0.35"/>
+            <stop offset="100%" stopColor="#ea580c" stopOpacity="0"/>
+          </radialGradient>
+
+          {/* Glow filter */}
+          <filter id="laserGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+
+          {/* Fiber core glow filter */}
+          <filter id="fiberGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="1.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Ambient room shadows (when lights are off) */}
+        {!isLightOn && (
+          <rect width="500" height="280" fill="rgba(15, 23, 42, 0.05)" />
+        )}
+
+        {/* WORKBENCH BASE */}
+        <rect x="20" y="210" width="460" height="15" fill={isLightOn ? '#e2e8f0' : '#1e293b'} rx="3" />
+        <rect x="30" y="206" width="440" height="4" fill={isLightOn ? '#94a3b8' : '#334155'} />
+
+        {/* RULER / DISTANCE SCALE TICKS */}
+        {Array.from({ length: 26 }).map((_, idx) => {
+          const tickD = 5 + idx; // scale starting from 5mm to 30mm
+          const tickX = 220 + tickD * 6.0;
+          const isMajor = tickD % 5 === 0;
+          return (
+            <g key={idx}>
+              <line
+                x1={tickX}
+                y1={210}
+                x2={tickX}
+                y2={isMajor ? 218 : 214}
+                stroke={isLightOn ? '#64748b' : '#475569'}
+                strokeWidth={isMajor ? 1.5 : 0.8}
+              />
+              {isMajor && (
+                <text
+                  x={tickX}
+                  y={228}
+                  fill={isLightOn ? '#475569' : '#94a3b8'}
+                  fontSize="7.5"
+                  fontWeight="600"
+                  textAnchor="middle"
+                  fontFamily="monospace"
+                >
+                  {tickD}
+                </text>
+              )}
+            </g>
+          )
+        })}
+
+        {/* HE-NE LASER SOURCE */}
+        {/* Laser box */}
+        <rect x="35" y="130" width="95" height="52" fill={isLightOn ? '#334155' : '#0f172a'} stroke={isLightOn ? '#1e293b' : '#334155'} strokeWidth="1.8" rx="4" />
+        {/* Warning label */}
+        <polygon points="50,147 57,147 53.5,141" fill="#eab308" />
+        <rect x="62" y="141" width="16" height="5" fill="#ef4444" rx="0.5" />
+        {/* Diode Indicator */}
+        <circle cx="110" cy="144" r="2.5" fill={isLightOn ? '#ef4444' : '#22c55e'} filter={!isLightOn ? 'url(#laserGlow)' : ''} />
+        {/* Laser Brand label */}
+        <text x="82" y="172" fill={isLightOn ? '#cbd5e1' : '#64748b'} fontSize="7.5" fontWeight="bold" letterSpacing="0.05em" textAnchor="middle" fontFamily="sans-serif">He-Ne LASER</text>
+        {/* Metal legs */}
+        <rect x="50" y="182" width="8" height="24" fill={isLightOn ? '#64748b' : '#334155'} />
+        <rect x="108" y="182" width="8" height="24" fill={isLightOn ? '#64748b' : '#334155'} />
+
+        {/* LASER OUTPUT COUPLER */}
+        <rect x="130" y="150" width="12" height="15" fill={isLightOn ? '#94a3b8' : '#475569'} rx="1" />
+        <rect x="142" y="154" width="8" height="7" fill={isLightOn ? '#475569' : '#1e293b'} />
+
+        {/* OPTICAL FIBER CABLE (Path representing a loop/bend) */}
+        {/* Outer cladding (grey/semi-trans) */}
+        <path
+          d="M 148 157.5 C 190 157.5, 170 105, 200 105 C 212 105, 218 115, 222 135"
+          fill="none"
+          stroke={isLightOn ? '#94a3b8' : '#334155'}
+          strokeWidth="3.5"
+          strokeLinecap="round"
+        />
+        {/* Glowing core (only when laser is ON) */}
+        {!isLightOn && (
+          <path
+            d="M 148 157.5 C 190 157.5, 170 105, 200 105 C 212 105, 218 115, 222 135"
+            fill="none"
+            stroke="#22d3ee"
+            strokeWidth="1.2"
+            filter="url(#fiberGlow)"
+            strokeLinecap="round"
+          />
+        )}
+
+        {/* FIBER APERTURE STAND */}
+        {/* Steel rod base */}
+        <rect x="212" y="195" width="20" height="11" fill={isLightOn ? '#475569' : '#334155'} rx="1" />
+        <rect x="218" y="135" width="8" height="60" fill={isLightOn ? '#64748b' : '#475569'} />
+        {/* Holder Block / Clamp */}
+        <rect x="214" y="132" width="16" height="10" fill={isLightOn ? '#334155' : '#1e293b'} rx="1.5" />
+        {/* Steel Ferrule */}
+        <rect x="220" y="135.5" width="12" height="3" fill={isLightOn ? '#cbd5e1' : '#64748b'} />
+        {/* Tiny fiber launcher tip */}
+        <rect x="232" y="136" width="3" height="2" fill="#e2e8f0" />
+
+        {/* CONE OF LIGHT (Visible only when lights are off) */}
+        {!isLightOn && (
+          <polygon
+            points={`235,137 ${screenX + 10},${125 - rPx} ${screenX + 10},${125 + rPx}`}
+            fill="url(#laserConeGrad)"
+          />
+        )}
+
+        {/* MOVABLE SCREEN STAND */}
+        {/* Base */}
+        <rect x={screenX - 12} y="195" width="24" height="11" fill={isLightOn ? '#475569' : '#334155'} rx="1" />
+        {/* Vertical Post */}
+        <rect x={screenX - 3} y="105" width="6" height="90" fill={isLightOn ? '#64748b' : '#475569'} />
+        {/* Adjustment collar */}
+        <rect x={screenX - 6} y="115" width="12" height="10" fill={isLightOn ? '#334155' : '#1e293b'} rx="1" />
+
+        {/* SCREEN PAPER BACKPLATE (3D Perspective tilted) */}
+        <polygon
+          points={`${screenX},56 ${screenX+25},70 ${screenX+25},190 ${screenX},176`}
+          fill={isLightOn ? '#1e293b' : '#0b0f19'}
+          stroke={isLightOn ? '#334155' : '#1e293b'}
+          strokeWidth="1.5"
+        />
+        {/* Graph Paper screen surface */}
+        <polygon
+          points={`${screenX-1},60 ${screenX+24},74 ${screenX+24},186 ${screenX-1},172`}
+          fill={isLightOn ? '#fcfcf0' : '#141c2c'}
+          stroke={isLightOn ? '#cbd5e1' : '#334155'}
+          strokeWidth="0.8"
+        />
+
+        {/* PERSPECTIVE GRID LINES ON GRAPH PAPER SCREEN */}
+        {/* Vertical lines */}
+        {Array.from({ length: 6 }).map((_, idx) => {
+          const gx = screenX - 1 + idx * 5
+          const gy1 = 60 + idx * 2.8
+          const gy2 = 172 + idx * 2.8
+          return (
+            <line
+              key={`gl-v-${idx}`}
+              x1={gx}
+              y1={gy1}
+              x2={gx}
+              y2={gy2}
+              stroke={isLightOn ? 'rgba(34, 197, 94, 0.16)' : 'rgba(34, 197, 94, 0.08)'}
+              strokeWidth="0.8"
+            />
+          )
+        })}
+        {/* Horizontal lines */}
+        {Array.from({ length: 11 }).map((_, idx) => {
+          const yOff = idx * 11
+          const gy1 = 60 + yOff
+          const gy2 = 74 + yOff
+          return (
+            <line
+              key={`gl-h-${idx}`}
+              x1={screenX - 1}
+              y1={gy1}
+              x2={screenX + 24}
+              y2={gy2}
+              stroke={isLightOn ? 'rgba(34, 197, 94, 0.16)' : 'rgba(34, 197, 94, 0.08)'}
+              strokeWidth="0.8"
+            />
+          )
+        })}
+
+        {/* GLOWING SPOT PROJECTED ON SCREEN (only when laser is ON) */}
+        {!isLightOn && (
+          <ellipse
+            cx={screenX + 12}
+            cy={123}
+            rx={rPx * 0.45}
+            ry={rPx}
+            fill="url(#glowingSpot)"
+            stroke="#f97316"
+            strokeWidth="0.8"
+            transform={`rotate(15, ${screenX + 12}, 123)`}
+            filter="url(#laserGlow)"
+          />
+        )}
+
+        {/* LABELS & ANNOTATIONS */}
+        {/* Distance Dimension arrow */}
+        <line
+          x1={235}
+          y1={190}
+          x2={screenX}
+          y2={190}
+          stroke={isLightOn ? '#2563eb' : '#38bdf8'}
+          strokeWidth="1"
+          strokeDasharray="2,2"
+        />
+        <polygon points={`235,190 239,188 239,192`} fill={isLightOn ? '#2563eb' : '#38bdf8'} />
+        <polygon points={`${screenX},190 ${screenX-4},188 ${screenX-4},192`} fill={isLightOn ? '#2563eb' : '#38bdf8'} />
+        <text
+          x={(235 + screenX) / 2}
+          y={184}
+          fill={isLightOn ? '#1e40af' : '#38bdf8'}
+          fontSize="8"
+          fontWeight="bold"
+          textAnchor="middle"
+          fontFamily="monospace"
+        >
+          d = {d} mm
+        </text>
+
+        {/* Spot Radius Dimension arrow */}
+        {!isLightOn && (
+          <g>
+            <line
+              x1={screenX + 32}
+              y1={123 - rPx}
+              x2={screenX + 32}
+              y2={123 + rPx}
+              stroke="#fb923c"
+              strokeWidth="1.2"
+            />
+            <polygon points={`${screenX+32},${123 - rPx} ${screenX+30},${123 - rPx + 4} ${screenX+34},${123 - rPx + 4}`} fill="#fb923c" />
+            <polygon points={`${screenX+32},${123 + rPx} ${screenX+30},${123 + rPx - 4} ${screenX+34},${123 + rPx - 4}`} fill="#fb923c" />
+            <text
+              x={screenX + 40}
+              y="126"
+              fill="#fb923c"
+              fontSize="8"
+              fontWeight="bold"
+              fontFamily="monospace"
+              textAnchor="left"
+            >
+              2r = {(rMm * 2).toFixed(1)} mm
+            </text>
+          </g>
+        )}
+      </svg>
+
+      {/* SETUP LABELS SUMMARY FOOTER */}
+      <div
+        style={{
+          marginTop: '8px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontSize: '0.72rem',
+          color: isLightOn ? '#64748b' : '#94a3b8',
+          fontFamily: 'monospace',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          padding: '0 4px',
+          transition: 'color 0.4s ease'
+        }}
+      >
+        <span>Laser Source: He-Ne (632.8 nm)</span>
+        <span>Aperture Distance: {d} mm</span>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  SIMULATION PANEL
 // ═══════════════════════════════════════════════════════════════
 function Simulation() {
@@ -395,6 +705,7 @@ function Simulation() {
   const [d,      setD]      = useState(10)
   const [NA,     setNA]     = useState(0.48)
   const [bright, setBright] = useState(0.85)
+  const [isLightOn, setIsLightOn] = useState(true)
 
   // Caliper state (width/height in mm)
   const [mrCaliper, setMrCaliper] = useState(10.0)
@@ -454,23 +765,23 @@ function Simulation() {
 
   // Redraw on param change
   useEffect(() => {
-    if (!canvasRef.current) return
+    if (!canvasRef.current || isLightOn) return
     drawSpot(canvasRef.current, { d, NA, bright, mrCaliper, pnCaliper })
-  }, [d, NA, bright, mrCaliper, pnCaliper])
+  }, [d, NA, bright, mrCaliper, pnCaliper, isLightOn])
 
   // Draw empty graph on mount
   useEffect(() => {
     if (graphRef.current) drawGraph(graphRef.current, [])
   }, [])
 
-  // Auto-align calipers to exact spot boundaries
-  const autoAlign = () => {
+  // Auto-align calipers to exact spot boundaries when distance or NA changes
+  useEffect(() => {
     const theta = Math.asin(Math.min(0.999, NA))
     const rMm   = d * Math.tan(theta)
     const diam  = rMm * 2
     setMrCaliper(diam)
     setPnCaliper(diam)
-  }
+  }, [d, NA])
 
   // Record simulated reading into table
   const recordReading = () => {
@@ -517,10 +828,10 @@ function Simulation() {
         </div>
         <div className="sim-howto-grid">
           {[
-            'Adjust NA and distance d sliders — the circular spot on graph paper changes size in real time.',
-            'Use the Horizontal Caliper (MR) and Vertical Caliper (PN) sliders to align the blue and red jaws with the edges of the orange light spot.',
-            'Check the Zoom viewports at the left to align the caliper lines exactly with the boundaries of the light spot.',
-            'Select the target row (d = 5, 10, 15, 20 mm) and click 📌 Record Caliper Read, then click ⚡ Calculate All.',
+            'Toggle the room lights off using the switch to project the He-Ne laser beam through the fiber.',
+            'Adjust Distance d and NA of Fibre sliders — the spot size and the aligned caliper lines update dynamically in real time.',
+            'Select the target row (d = 5, 10, 15, 20 mm) in the record panel on the left.',
+            'Click 📌 Record Caliper Reads to record the automated measurement, then click ⚡ Calculate All to plot the graph and compute NA.',
           ].map((s, i) => (
             <div key={i} className="sim-howto-step">
               <span className="sim-howto-num">{String(i+1).padStart(2,'0')}</span>
@@ -530,34 +841,19 @@ function Simulation() {
         </div>
       </div>
 
-      <div className="sim-main-grid">
-        {/* Left Column: Live Simulation Card */}
-        <div className="sim-live-card">
-          <div className="sim-live-title">
-            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '50%', background: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', fontSize: '0.85rem' }}>🎯</span>
-            Optical Fibre Spot Simulation
-          </div>
-          <div id="spotStage" className="sim-screen-container">
-            <canvas ref={canvasRef} width={640} height={360}
-                    style={{ borderRadius: 8, maxWidth: '100%', display: 'block', margin: '0 auto' }}/>
-          </div>
-          <div className="sim-readout-bar">
-            <div className="sim-readout-hint">CALIPER DIAMETERS MEASURED</div>
-            <div className="sim-readout-value" style={{ display: 'flex', gap: 16 }}>
-              <span style={{ color: '#1e3cbc' }}>MR: {mrCaliper.toFixed(1)} mm</span>
-              <span style={{ color: '#bc1e1e' }}>PN: {pnCaliper.toFixed(1)} mm</span>
-            </div>
-            <div className="sim-readout-hint">Adjust calipers to match horizontal (MR) and vertical (PN) spot edges</div>
-          </div>
-          <div className="sim-jump-bar">
-            <span className="sim-jump-label">ASSISTANCE:</span>
-            <button className="sim-jump-btn" onClick={autoAlign} style={{ background: 'rgba(59,130,246,0.08)', borderColor: 'rgba(59,130,246,0.3)', color: '#2563eb' }}>⚡ Auto-Align Calipers</button>
-            <button className="sim-jump-btn" onClick={() => { setMrCaliper(10.0); setPnCaliper(10.0) }}>↺ Reset Calipers</button>
-          </div>
-        </div>
-
-        {/* Right Column: Sidebar Cards */}
+      <div className="exp04-sim-grid">
+        {/* Left Column: Sidebar Controls */}
         <div>
+          {/* Room Light Switch */}
+          <button
+            className={`dark-room-toggle ${!isLightOn ? 'active' : ''}`}
+            onClick={() => setIsLightOn(!isLightOn)}
+            style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+          >
+            {!isLightOn ? '💡 Turn On Room Light (Apparatus view)' : '🌑 Turn Off Room Light (Measurement view)'}
+          </button>
+
+          {/* PARAMETERS CARD */}
           <div className="sim-sidebar-card">
             <div className="sim-sidebar-title">⚙️ PARAMETERS</div>
             <div className="sim-param-row">
@@ -574,55 +870,75 @@ function Simulation() {
             </div>
           </div>
 
-          <div className="sim-sidebar-card">
-            <div className="sim-sidebar-title" style={{ color: '#1e3cbc' }}>📐 HORIZONTAL CALIPER (MR)</div>
-            <div className="sim-param-row">
-              <div className="sim-param-label"><span>Caliper Width (MR)</span><span className="sim-param-val" style={{ color: '#1e3cbc' }}>{mrCaliper.toFixed(1)} mm</span></div>
-              <input type="range" min="2.0" max="45.0" step="0.1" value={mrCaliper} onChange={e => setMrCaliper(parseFloat(e.target.value))} />
+          {/* MEASUREMENT TOOLS CONTROLS (Only visible/active when room is dark) */}
+          {!isLightOn ? (
+            <>
+              {/* RECORD READING */}
+              <div className="sim-sidebar-card">
+                <div className="sim-sidebar-title">
+                  <span>📌 RECORD READING</span>
+                  <span style={{ color: '#94a3b8' }}>↑</span>
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AUTOMATIC READOUTS</div>
+                <div className="sim-record-display" style={{ fontSize: '1rem', display: 'flex', gap: 12 }}>
+                  <span style={{ color: '#1e3cbc' }}>MR: {mrCaliper.toFixed(1)} mm</span>
+                  <span style={{ color: '#bc1e1e' }}>PN: {pnCaliper.toFixed(1)} mm</span>
+                </div>
+                <div className="sim-record-selects">
+                  <select className="sim-select" style={{ gridColumn: 'span 2' }} value={recRow} onChange={e => {
+                    const nextRow = +e.target.value
+                    setRecRow(nextRow)
+                    setD(D_VALS[nextRow])
+                  }}>
+                    {D_VALS.map((dv, i) => (
+                      <option key={dv} value={i}>Row {i+1} — d = {dv} mm</option>
+                    ))}
+                  </select>
+                </div>
+                <button className="btn-record" onClick={recordReading}>
+                  <span style={{ color: '#ef4444' }}>📌</span> Record Caliper Reads
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="setup-placeholder">
+              <span style={{ fontSize: '1.5rem', marginBottom: '8px' }}>🌑</span>
+              <strong style={{ fontFamily: 'Space Grotesk, sans-serif', color: '#334155' }}>Measurement Inactive</strong>
+              <p style={{ marginTop: '6px', fontSize: '0.75rem', color: '#64748b', lineHeight: '1.4' }}>
+                Caliper measurements and data recording are disabled in bright room light.<br/>
+                <strong>Turn off room lights</strong> using the button above to begin measurements.
+              </p>
             </div>
-            <div style={{ display: 'flex', gap: 6, justifyContent: 'space-between' }}>
-              <button className="sim-jump-btn" style={{ flex: 1 }} onClick={() => setMrCaliper(prev => Math.max(2, parseFloat((prev - 0.1).toFixed(1))))}>-0.1 mm</button>
-              <button className="sim-jump-btn" style={{ flex: 1 }} onClick={() => setMrCaliper(prev => Math.min(45, parseFloat((prev + 0.1).toFixed(1))))}>+0.1 mm</button>
-            </div>
+          )}
+        </div>
+
+        {/* Right Column: Visual Setup / Circle Diagram */}
+        <div className={`sim-live-card ${!isLightOn ? 'dark-room' : ''}`}>
+          <div className="sim-live-title">
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '50%', background: !isLightOn ? 'rgba(56,189,248,0.1)' : 'rgba(59, 130, 246, 0.1)', color: !isLightOn ? '#38bdf8' : '#2563eb', fontSize: '0.85rem' }}>
+              {!isLightOn ? '📐' : '🔬'}
+            </span>
+            {!isLightOn ? 'Optical Fibre Spot Measurement (Close-Up)' : 'Optical Fibre Setup Workbench'}
           </div>
 
-          <div className="sim-sidebar-card">
-            <div className="sim-sidebar-title" style={{ color: '#bc1e1e' }}>📐 VERTICAL CALIPER (PN)</div>
-            <div className="sim-param-row">
-              <div className="sim-param-label"><span>Caliper Height (PN)</span><span className="sim-param-val" style={{ color: '#bc1e1e' }}>{pnCaliper.toFixed(1)} mm</span></div>
-              <input type="range" min="2.0" max="45.0" step="0.1" value={pnCaliper} onChange={e => setPnCaliper(parseFloat(e.target.value))} />
-            </div>
-            <div style={{ display: 'flex', gap: 6, justifyContent: 'space-between' }}>
-              <button className="sim-jump-btn" style={{ flex: 1 }} onClick={() => setPnCaliper(prev => Math.max(2, parseFloat((prev - 0.1).toFixed(1))))}>-0.1 mm</button>
-              <button className="sim-jump-btn" style={{ flex: 1 }} onClick={() => setPnCaliper(prev => Math.min(45, parseFloat((prev + 0.1).toFixed(1))))}>+0.1 mm</button>
-            </div>
-          </div>
-
-          <div className="sim-sidebar-card">
-            <div className="sim-sidebar-title">
-              <span>📌 RECORD READING</span>
-              <span style={{ color: '#94a3b8' }}>↑</span>
-            </div>
-            <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CALIPER READOUTS</div>
-            <div className="sim-record-display" style={{ fontSize: '1rem', display: 'flex', gap: 12 }}>
-              <span style={{ color: '#1e3cbc' }}>MR: {mrCaliper.toFixed(1)}</span>
-              <span style={{ color: '#bc1e1e' }}>PN: {pnCaliper.toFixed(1)}</span>
-            </div>
-            <div className="sim-record-selects">
-              <select className="sim-select" style={{ gridColumn: 'span 2' }} value={recRow} onChange={e => {
-                const nextRow = +e.target.value
-                setRecRow(nextRow)
-                setD(D_VALS[nextRow])
-              }}>
-                {D_VALS.map((dv, i) => (
-                  <option key={dv} value={i}>Row {i+1} — d = {dv} mm</option>
-                ))}
-              </select>
-            </div>
-            <button className="btn-record" onClick={recordReading}>
-              <span style={{ color: '#ef4444' }}>📌</span> Record Caliper Reads
-            </button>
-          </div>
+          {isLightOn ? (
+            <PhysicalSetup d={d} NA={NA} isLightOn={isLightOn} setIsLightOn={setIsLightOn} />
+          ) : (
+            <>
+              <div id="spotStage" className="sim-screen-container" style={{ border: '1px solid #1e293b' }}>
+                <canvas ref={canvasRef} width={640} height={360}
+                        style={{ borderRadius: 8, maxWidth: '100%', display: 'block', margin: '0 auto' }}/>
+              </div>
+              <div className="sim-readout-bar" style={{ background: '#0b0f19', borderColor: '#1e293b', color: '#94a3b8', padding: '14px 20px' }}>
+                <div className="sim-readout-hint" style={{ color: '#64748b', fontSize: '0.7rem', fontWeight: 600 }}>AUTOMATED MEASUREMENT PROFILE</div>
+                <div className="sim-readout-value" style={{ display: 'flex', gap: 16, marginTop: '4px', marginBottom: '4px' }}>
+                  <span style={{ color: '#38bdf8', fontWeight: 'bold', fontSize: '1.05rem' }}>MR (Horizontal): {mrCaliper.toFixed(1)} mm</span>
+                  <span style={{ color: '#f87171', fontWeight: 'bold', fontSize: '1.05rem' }}>PN (Vertical): {pnCaliper.toFixed(1)} mm</span>
+                </div>
+                <div className="sim-readout-hint" style={{ color: '#64748b', fontSize: '0.72rem' }}>Caliper lines are automatically aligned to the exact boundaries of the projected light spot.</div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
