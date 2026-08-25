@@ -13,8 +13,6 @@ const LIGHT_SOURCES = [
   { nm: 405, label: '🟣 Violet — 405 nm' },
 ]
 
-// 6 rows: 3 different L values × orders n=1 and n=2
-const ROW_ORDERS = [1, 2, 1, 2, 1, 2]
 
 function wlRGB(nm) {
   let r, g, b
@@ -31,7 +29,7 @@ function wlRGB(nm) {
 // ═══════════════════════════════════════════════════════════════
 //  DRAW FUNCTION  (pure — takes canvas + state params)
 // ═══════════════════════════════════════════════════════════════
-function drawDiffraction(canvas, { D, N, lambda, caliperSeparation, activeOrder }) {
+function drawDiffraction(canvas, { D, N, lambda, selectedOrder }) {
   const ctx = canvas.getContext('2d')
   const W = canvas.width, H = canvas.height, cy = H / 2
   ctx.fillStyle = '#0a1020'
@@ -39,44 +37,131 @@ function drawDiffraction(canvas, { D, N, lambda, caliperSeparation, activeOrder 
 
   const rgb       = wlRGB(lambda)
   const lCm       = lambda * 1e-7
-  const gratingX  = 120
-  const screenX   = W - 60
-  const pixPerCm  = (screenX - gratingX) / D
+  
+  // Coordinate definitions for right-to-left layout
+  const laserX    = 560
+  const screenX   = 120
+  const pixPerCm  = 5.0
+  const gratingX  = screenX + D * pixPerCm // Movable grating based on D (L)
 
-  // Screen bar
-  ctx.fillStyle = 'rgba(99,179,237,0.08)'
-  ctx.fillRect(screenX - 2, 20, 4, H - 40)
+  // Draw bench rail baseline (optical bench)
+  ctx.strokeStyle = '#1e293b'
+  ctx.lineWidth = 3
+  ctx.beginPath()
+  ctx.moveTo(30, H - 40)
+  ctx.lineTo(W - 30, H - 40)
+  ctx.stroke()
+
+  // Draw Screen stand and plate
+  // Stand post to base
+  ctx.fillStyle = '#1e293b'
+  ctx.fillRect(screenX - 4, H - 60, 8, 20)
+  // Screen plate
+  ctx.fillStyle = '#f1f5f9'
+  ctx.fillRect(screenX - 2, 20, 4, H - 80)
+  ctx.strokeStyle = '#cbd5e1'
+  ctx.lineWidth = 1
+  ctx.strokeRect(screenX - 2, 20, 4, H - 80)
+  // Screen base plate
+  ctx.fillStyle = '#0f172a'
+  ctx.strokeStyle = '#334155'
+  ctx.lineWidth = 1.5
+  ctx.fillRect(screenX - 25, H - 40, 50, 8)
+  ctx.strokeRect(screenX - 25, H - 40, 50, 8)
+  // Screen label
   ctx.fillStyle = 'rgba(99,179,237,0.5)'
   ctx.font = '8px DM Mono,monospace'
   ctx.textAlign = 'center'
-  ctx.fillText('Screen', screenX, 14)
+  ctx.fillText('Screen', screenX, 12)
 
-  // Grating lines
-  for (let i = 0; i < 8; i++) {
-    ctx.strokeStyle = 'rgba(99,179,237,0.3)'
-    ctx.lineWidth = 1
+  // Draw Diffraction Grating stand and plate (movable)
+  // Stand post
+  ctx.fillStyle = '#1e293b'
+  ctx.fillRect(gratingX - 3, cy + 30, 6, H - 70 - cy)
+  // Grating clip holder
+  ctx.fillStyle = '#475569'
+  ctx.fillRect(gratingX - 6, cy + 20, 12, 10)
+  // Translucent Grating plate
+  ctx.fillStyle = 'rgba(99,179,237,0.15)'
+  ctx.strokeStyle = 'rgba(99,179,237,0.6)'
+  ctx.lineWidth = 1.5
+  ctx.fillRect(gratingX - 4, cy - 30, 8, 60)
+  ctx.strokeRect(gratingX - 4, cy - 30, 8, 60)
+  // Grating slits/rulings lines
+  ctx.strokeStyle = 'rgba(99,179,237,0.35)'
+  ctx.lineWidth = 0.5
+  for (let gx = gratingX - 3; gx <= gratingX + 3; gx += 2) {
     ctx.beginPath()
-    ctx.moveTo(gratingX + (i % 2) * 2, cy - 30)
-    ctx.lineTo(gratingX + (i % 2) * 2, cy + 30)
+    ctx.moveTo(gx, cy - 28)
+    ctx.lineTo(gx, cy + 28)
     ctx.stroke()
   }
-  ctx.fillStyle = 'rgba(99,179,237,0.5)'
-  ctx.fillText('Grating', gratingX, cy + 42)
+  // Grating base plate
+  ctx.fillStyle = '#0f172a'
+  ctx.strokeStyle = '#334155'
+  ctx.lineWidth = 1.5
+  ctx.fillRect(gratingX - 25, H - 40, 50, 8)
+  ctx.strokeRect(gratingX - 25, H - 40, 50, 8)
+  // Grating labels
+  ctx.fillStyle = 'rgba(99,179,237,0.6)'
+  ctx.fillText('Grating', gratingX, cy + 45)
   ctx.fillStyle = 'rgba(79,209,197,0.6)'
-  ctx.fillText(`N=${N}/cm`, gratingX, cy + 52)
+  ctx.fillText(`N=${N}/cm`, gratingX, cy + 55)
 
-  // Laser beam
-  ctx.strokeStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},0.8)`
+  // Draw Laser source on the right
+  // Stand post
+  ctx.fillStyle = '#1e293b'
+  ctx.fillRect(laserX - 3, cy + 12, 6, H - 52 - cy)
+  // Joint hinge/clamp
+  ctx.beginPath()
+  ctx.arc(laserX, cy + 12, 5, 0, 2 * Math.PI)
+  ctx.fillStyle = '#475569'
+  ctx.fill()
+  // Laser stand base plate
+  ctx.fillStyle = '#0f172a'
+  ctx.strokeStyle = '#334155'
+  ctx.lineWidth = 1.5
+  ctx.fillRect(laserX - 25, H - 40, 50, 8)
+  ctx.strokeRect(laserX - 25, H - 40, 50, 8)
+  // Laser cylinder body
+  ctx.fillStyle = '#111827'
+  ctx.strokeStyle = '#374151'
+  ctx.lineWidth = 1
+  ctx.fillRect(laserX - 25, cy - 10, 50, 20)
+  ctx.strokeRect(laserX - 25, cy - 10, 50, 20)
+  // Cooling fins
+  ctx.fillStyle = '#1f2937'
+  for (let fx = laserX - 15; fx <= laserX + 15; fx += 8) {
+    ctx.fillRect(fx, cy - 12, 4, 24)
+  }
+  // Front nozzle/aperture
+  ctx.fillStyle = '#4b5563'
+  ctx.fillRect(laserX - 30, cy - 5, 5, 10)
+  // Golden ring
+  ctx.fillStyle = '#d97706'
+  ctx.fillRect(laserX - 28, cy - 5, 1, 10)
+  // Back cap
+  ctx.fillStyle = '#374151'
+  ctx.fillRect(laserX + 25, cy - 7, 4, 14)
+  // Cord coming out of back cap
+  ctx.strokeStyle = '#4b5563'
   ctx.lineWidth = 2
-  ctx.beginPath(); ctx.moveTo(20, cy); ctx.lineTo(gratingX, cy); ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(laserX + 29, cy)
+  ctx.bezierCurveTo(laserX + 45, cy, laserX + 50, cy + 30, laserX + 55, H - 40)
+  ctx.stroke()
+  // Laser label
+  ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},0.85)`
+  ctx.font = '8px DM Mono,monospace'
+  ctx.textAlign = 'center'
+  ctx.fillText('Laser', laserX, H - 46)
 
-  // Laser source label
-  ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},0.7)`
-  ctx.font = '7px DM Mono,monospace'; ctx.textAlign = 'left'
-  ctx.fillText('Laser', 4, cy - 4)
+  // Compute diffraction orders up to selectedOrder (1, 2, or 3)
+  const orders = []
+  for (let o = 0; o <= selectedOrder; o++) {
+    orders.push(o)
+  }
 
-  // Compute diffraction orders
-  const orders = [0, 1, 2]
   const dots = []
   orders.forEach(n => {
     const sinT = n * N * lCm
@@ -84,170 +169,189 @@ function drawDiffraction(canvas, { D, N, lambda, caliperSeparation, activeOrder 
     const tanT  = sinT / Math.sqrt(1 - sinT * sinT)
     const xCm   = D * tanT
     const xPx   = xCm * pixPerCm
-    const intensity = n === 0 ? 1 : n === 1 ? 0.85 : 0.5
+    const intensity = n === 0 ? 1 : n === 1 ? 0.85 : n === 2 ? 0.6 : 0.4
     dots.push({ n, xPx, xCm, sinT, intensity, upper: cy - xPx, lower: cy + xPx })
   })
 
-  // Draw diffracted beams + dots
+  // Laser beam (undiffracted collimated beam from laser to grating)
+  ctx.strokeStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},0.95)`
+  ctx.lineWidth = 2
+  ctx.shadowColor = `rgba(${rgb.r},${rgb.g},${rgb.b},0.8)`
+  ctx.shadowBlur = 4
+  ctx.beginPath()
+  ctx.moveTo(laserX - 30, cy)
+  ctx.lineTo(gratingX, cy)
+  ctx.stroke()
+  ctx.shadowBlur = 0
+  ctx.shadowColor = 'transparent'
+
+  // Draw diffracted beams paths
   dots.forEach(d => {
     if (d.n > 0) {
       ctx.strokeStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${d.intensity * 0.4})`
-      ctx.lineWidth = 1; ctx.setLineDash([3, 3])
+      ctx.lineWidth = 1
+      ctx.setLineDash([3, 3])
       ctx.beginPath(); ctx.moveTo(gratingX, cy); ctx.lineTo(screenX, d.upper); ctx.stroke()
       ctx.beginPath(); ctx.moveTo(gratingX, cy); ctx.lineTo(screenX, d.lower); ctx.stroke()
       ctx.setLineDash([])
     }
+  })
+
+  // Draw glowing spots on the screen
+  dots.forEach(d => {
     ;[d.upper, d.lower].forEach((y, i) => {
       if (d.n === 0 && i === 1) return
       const ys   = d.n === 0 ? cy : y
       const grad = ctx.createRadialGradient(screenX, ys, 0, screenX, ys, 10)
       grad.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},${d.intensity})`)
+      grad.addColorStop(0.3, `rgba(${rgb.r},${rgb.g},${rgb.b},${d.intensity * 0.7})`)
       grad.addColorStop(1, 'transparent')
       ctx.beginPath(); ctx.arc(screenX, ys, 10, 0, 2 * Math.PI)
       ctx.fillStyle = grad; ctx.fill()
     })
   })
 
-  // Draw manual calipers
-  const caliperHalfPx = (caliperSeparation / 2) * pixPerCm
-  ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.8
-  // Upper jaw
+  // Draw Intensity Distribution Curve (to the left of screen)
   ctx.beginPath()
-  ctx.moveTo(screenX - 18, cy - caliperHalfPx)
-  ctx.lineTo(screenX + 18, cy - caliperHalfPx)
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.moveTo(screenX - 18, cy - caliperHalfPx - 4)
-  ctx.lineTo(screenX - 18, cy - caliperHalfPx + 4)
-  ctx.moveTo(screenX + 18, cy - caliperHalfPx - 4)
-  ctx.lineTo(screenX + 18, cy - caliperHalfPx + 4)
-  ctx.stroke()
-
-  // Lower jaw
-  ctx.beginPath()
-  ctx.moveTo(screenX - 18, cy + caliperHalfPx)
-  ctx.lineTo(screenX + 18, cy + caliperHalfPx)
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.moveTo(screenX - 18, cy + caliperHalfPx - 4)
-  ctx.lineTo(screenX - 18, cy + caliperHalfPx + 4)
-  ctx.moveTo(screenX + 18, cy + caliperHalfPx - 4)
-  ctx.lineTo(screenX + 18, cy + caliperHalfPx + 4)
-  ctx.stroke()
-
-  // Connector scale line
-  ctx.strokeStyle = 'rgba(251,191,36,0.35)'; ctx.lineWidth = 1.2
-  ctx.beginPath(); ctx.moveTo(screenX + 22, cy - caliperHalfPx); ctx.lineTo(screenX + 22, cy + caliperHalfPx); ctx.stroke()
-
-  // Digital reading next to connector
-  ctx.fillStyle = '#fbbf24'; ctx.font = '8px DM Mono,monospace'; ctx.textAlign = 'left'
-  ctx.fillText(`${caliperSeparation.toFixed(3)} cm`, screenX + 28, cy + 3)
-
-  // Draw magnified insets
-  const zoomScale = 2.5
-  const drawMagnifier = (destX, destY, targetY, label) => {
-    const r = 40
-    ctx.save()
-    ctx.shadowColor = 'rgba(251,191,36,0.15)'
-    ctx.shadowBlur = 6
-    ctx.beginPath()
-    ctx.arc(destX, destY, r, 0, 2 * Math.PI)
-    ctx.fillStyle = '#050a14'
-    ctx.fill()
-    ctx.shadowColor = 'transparent'
-    ctx.strokeStyle = 'rgba(251,191,36,0.7)'
-    ctx.lineWidth = 1.8
-    ctx.stroke()
-    ctx.clip()
-
-    // Grid inside zoom
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 0.5
-    ctx.beginPath()
-    for (let xo = -r; xo <= r; xo += 10) {
-      ctx.moveTo(destX + xo, destY - r); ctx.lineTo(destX + xo, destY + r)
-    }
-    for (let yo = -r; yo <= r; yo += 10) {
-      ctx.moveTo(destX - r, destY + yo); ctx.lineTo(destX + r, destY + yo)
-    }
-    ctx.stroke()
-
-    // Screen line inside zoom
-    ctx.strokeStyle = 'rgba(99,179,237,0.15)'
-    ctx.lineWidth = 1
-    ctx.beginPath(); ctx.moveTo(destX, destY - r); ctx.lineTo(destX, destY + r); ctx.stroke()
-
-    // Draw spots relative to targetY
+  let firstCurvePoint = true
+  const maxCurveOffset = 45
+  for (let y = 20; y <= H - 60; y++) {
+    let intensitySum = 0
     dots.forEach(d => {
-      const yZoomU = destY + (d.upper - targetY) * zoomScale
-      if (Math.abs(yZoomU - destY) < r + 20) {
-        const grad = ctx.createRadialGradient(destX, yZoomU, 0, destX, yZoomU, 8 * zoomScale)
-        grad.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},${d.intensity})`)
-        grad.addColorStop(1, 'transparent')
-        ctx.beginPath(); ctx.arc(destX, yZoomU, 8 * zoomScale, 0, 2 * Math.PI)
-        ctx.fillStyle = grad; ctx.fill()
-      }
+      const dyU = y - d.upper
+      intensitySum += d.intensity * Math.exp(-(dyU * dyU) / (2 * 8 * 8))
       if (d.n > 0) {
-        const yZoomL = destY + (d.lower - targetY) * zoomScale
-        if (Math.abs(yZoomL - destY) < r + 20) {
-          const grad = ctx.createRadialGradient(destX, yZoomL, 0, destX, yZoomL, 8 * zoomScale)
-          grad.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},${d.intensity})`)
-          grad.addColorStop(1, 'transparent')
-          ctx.beginPath(); ctx.arc(destX, yZoomL, 8 * zoomScale, 0, 2 * Math.PI)
-          ctx.fillStyle = grad; ctx.fill()
-        }
+        const dyL = y - d.lower
+        intensitySum += d.intensity * Math.exp(-(dyL * dyL) / (2 * 8 * 8))
       }
     })
-
-    // Draw caliper jaw line (always centered in viewport since we center on caliper y)
-    ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.8
-    ctx.beginPath()
-    ctx.moveTo(destX - 22, destY)
-    ctx.lineTo(destX + 22, destY)
-    ctx.stroke()
-    ctx.beginPath()
-    ctx.moveTo(destX - 22, destY - 3)
-    ctx.lineTo(destX - 22, destY + 3)
-    ctx.moveTo(destX + 22, destY - 3)
-    ctx.lineTo(destX + 22, destY + 3)
-    ctx.stroke()
-
-    ctx.restore()
-
-    // Glass glare arc
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)'
-    ctx.lineWidth = 1
-    ctx.beginPath(); ctx.arc(destX, destY, r - 2, -Math.PI / 3, Math.PI / 6); ctx.stroke()
-
-    // Label
-    ctx.fillStyle = 'rgba(148,163,184,0.95)'
-    ctx.font = '7.5px DM Mono,monospace'
-    ctx.textAlign = 'center'
-    ctx.fillText(label, destX, destY - r - 6)
+    const cx = screenX - 10 - intensitySum * maxCurveOffset
+    if (firstCurvePoint) {
+      ctx.moveTo(cx, y)
+      firstCurvePoint = false
+    } else {
+      ctx.lineTo(cx, y)
+    }
   }
+  ctx.strokeStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},0.85)`
+  ctx.lineWidth = 1.8
+  ctx.stroke()
 
-  drawMagnifier(200, 75, cy - caliperHalfPx, '🔎 UPPER JAW ZOOM')
-  drawMagnifier(200, H - 75, cy + caliperHalfPx, '🔎 LOWER JAW ZOOM')
+  // Linear Gradient area fill for intensity curve
+  ctx.lineTo(screenX - 10, H - 60)
+  ctx.lineTo(screenX - 10, 20)
+  ctx.closePath()
+  const areaGrad = ctx.createLinearGradient(screenX - 60, 0, screenX - 10, 0)
+  areaGrad.addColorStop(0, 'transparent')
+  areaGrad.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},0.12)`)
+  ctx.fillStyle = areaGrad
+  ctx.fill()
 
-  // Info labels
-  ctx.fillStyle = 'rgba(113,128,150,0.7)'; ctx.font = '8px DM Mono,monospace'; ctx.textAlign = 'left'
-  ctx.fillText(`λ=${lambda}nm`, 20, 16)
-  ctx.fillText(`D=${D}cm`,      20, 26)
-
-  // Order labels
+  // Draw Pointer Lines and Labels for Diffraction Spots
   dots.forEach(d => {
     if (d.n === 0) {
-      ctx.fillStyle = 'rgba(246,173,85,0.8)'; ctx.font = '7px DM Mono,monospace'; ctx.textAlign = 'left'
-      ctx.fillText('n=0', screenX - 28, cy - 6)
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)'
+      ctx.lineWidth = 0.8
+      ctx.beginPath()
+      ctx.moveTo(screenX + 5, cy)
+      ctx.lineTo(screenX + 45, cy)
+      ctx.stroke()
+
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.8)'
+      ctx.beginPath(); ctx.arc(screenX + 5, cy, 1.5, 0, 2 * Math.PI); ctx.fill()
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)'
+      ctx.font = '8px DM Mono,monospace'
+      ctx.textAlign = 'left'
+      ctx.fillText('Central Spot', screenX + 50, cy + 3)
     } else {
-      ctx.fillStyle = 'rgba(246,173,85,0.7)'; ctx.textAlign = 'left'
-      ctx.fillText(`n=${d.n}`, screenX - 28, d.upper + 4)
-      ctx.fillText(`n=${d.n}`, screenX - 28, d.lower + 4)
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)'
+      ctx.lineWidth = 0.8
+      // Draw pointers for lower (symmetric) spots for clarity
+      ctx.beginPath()
+      ctx.moveTo(screenX + 5, d.lower)
+      ctx.lineTo(screenX + 45, d.lower)
+      ctx.stroke()
+
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.8)'
+      ctx.beginPath(); ctx.arc(screenX + 5, d.lower, 1.5, 0, 2 * Math.PI); ctx.fill()
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)'
+      ctx.font = '7.5px DM Mono,monospace'
+      ctx.textAlign = 'left'
+      const labelText = d.n === 1 ? '1st Order Diffraction' : d.n === 2 ? '2nd Order Diffraction' : '3rd Order Diffraction'
+      ctx.fillText(labelText, screenX + 50, d.lower + 3)
     }
   })
 
+  // Draw dimension line for active order's spot (from central spot cy to lower spot cy + xPx)
+  const activeDot = dots.find(d => d.n === selectedOrder)
+  if (activeDot && activeDot.n > 0) {
+    const ySpot = cy + activeDot.xPx
+    ctx.strokeStyle = '#fbbf24'
+    ctx.lineWidth = 1.2
+
+    // Horizontal extension lines (extended to the left of the screen)
+    ctx.beginPath()
+    ctx.moveTo(screenX - 35, cy)
+    ctx.lineTo(screenX - 5, cy)
+    ctx.moveTo(screenX - 35, ySpot)
+    ctx.lineTo(screenX - 5, ySpot)
+    ctx.stroke()
+
+    // Vertical dimension line
+    ctx.beginPath()
+    ctx.moveTo(screenX - 28, cy)
+    ctx.lineTo(screenX - 28, ySpot)
+    ctx.stroke()
+
+    // Draw small ticks/arrowheads at endpoints
+    // Arrow pointing up at cy
+    ctx.beginPath()
+    ctx.moveTo(screenX - 31, cy + 4)
+    ctx.lineTo(screenX - 28, cy)
+    ctx.lineTo(screenX - 25, cy + 4)
+    ctx.stroke()
+
+    // Arrow pointing down at ySpot
+    ctx.beginPath()
+    ctx.moveTo(screenX - 31, ySpot - 4)
+    ctx.lineTo(screenX - 28, ySpot)
+    ctx.lineTo(screenX - 25, ySpot - 4)
+    ctx.stroke()
+
+    // Label for the dimension x in a white box with a clean, modern sans-serif font
+    const text = `x = ${activeDot.xCm.toFixed(3)} cm`
+    ctx.font = "bold 11px system-ui, -apple-system, sans-serif"
+    const textWidth = ctx.measureText(text).width
+    const boxWidth = textWidth + 10
+    const boxHeight = 18
+    const boxX = screenX - 38 - boxWidth
+    const boxY = (cy + ySpot) / 2 - boxHeight / 2
+
+    // Draw white background box
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(boxX, boxY, boxWidth, boxHeight)
+    
+    // Draw box border
+    ctx.strokeStyle = '#000000'
+    ctx.lineWidth = 0.8
+    ctx.strokeRect(boxX, boxY, boxWidth, boxHeight)
+
+    // Draw text inside box (centered vertically and horizontally within padding)
+    ctx.fillStyle = '#000000'
+    ctx.textAlign = 'left'
+    ctx.fillText(text, boxX + 5, boxY + 13)
+  }
+
+  // Info labels on the side
+  ctx.fillStyle = 'rgba(113,128,150,0.7)'; ctx.font = '8px DM Mono,monospace'; ctx.textAlign = 'right'
+  ctx.fillText(`λ=${lambda}nm`, W - 20, 16)
+  ctx.fillText(`L=${D}cm`,      W - 20, 26)
+
   // Return the actual exact target separation for order calculation
-  const targetDot = dots.find(d => d.n === activeOrder)
-  return targetDot ? targetDot.xCm * 2 : 0
+  const targetDot = dots.find(d => d.n === selectedOrder)
+  return targetDot ? targetDot.xCm : 0
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -266,7 +370,7 @@ function Theory({ setTab }) {
             </div>
             <p className="aim-card-body">
               To determine the number of lines per cm on the grating surface and to find the
-              <strong> wavelength of a He-Ne laser beam</strong> using a diffraction grating.
+              <strong> wavelength of a laser beam</strong> using a diffraction grating.
             </p>
           </div>
 
@@ -279,18 +383,18 @@ function Theory({ setTab }) {
               <span className="formula-text">N = sin θ / (nλ)</span>
               <span className="formula-subtext">N = NUMBER OF LINES PER CM ON GRATING</span>
               <div className="formula-detail">
-                <b>θ</b> = Angle of diffraction = tan⁻¹(x / 2D) &nbsp;|&nbsp;
-                <b>n</b> = Order of diffraction (1, 2, 3…) &nbsp;|&nbsp;
+                <b>θ</b> = Angle of diffraction = tan⁻¹(x / L) &nbsp;|&nbsp;
+                <b>n</b> = Order of diffraction (1, 2, 3) &nbsp;|&nbsp;
                 <b>λ</b> = Wavelength of laser light (cm) &nbsp;|&nbsp;
-                <b>x</b> = Distance between two n-th order spots (cm) &nbsp;|&nbsp;
-                <b>D</b> = Distance from grating to screen (cm)
+                <b>x</b> = Distance from center spot to n-th order spot (cm) &nbsp;|&nbsp;
+                <b>L</b> = Distance from grating to screen (cm)
               </div>
             </div>
             <div className="formula-block">
               <span className="formula-text">λ = sin θ / (nN)</span>
               <span className="formula-subtext">(WAVELENGTH OF LASER)</span>
               <div className="formula-detail">
-                sin θ ≈ tan θ = x/2D
+                sin θ ≈ tan θ = x/L
               </div>
             </div>
             <div className="formula-block">
@@ -323,12 +427,12 @@ function Theory({ setTab }) {
             <p style={{ marginBottom: '12px' }}>
               The laser beam passing through the grating displays a pattern of bright dots on a
               screen — the <strong>zeroth order dot</strong> at the center (θ = 0) and symmetric
-              <strong> first-order, second-order</strong> dots on each side. Higher orders are
+              <strong> first-order, second-order, and third-order</strong> dots on each side. Higher orders are
               progressively dimmer.
             </p>
             <p>
-              By measuring the separation x between symmetric n-th order dots and knowing the
-              grating-screen distance D, we compute θ = tan⁻¹(x/2D) and solve for λ.
+              By measuring the separation distance x from the central spot to the n-th order spot and knowing the
+              grating-screen distance L, we compute θ = tan⁻¹(x/L) and solve for λ.
             </p>
           </div>
         </div>
@@ -341,55 +445,74 @@ function Theory({ setTab }) {
           <svg viewBox="0 0 280 260" xmlns="http://www.w3.org/2000/svg"
                style={{ width: '100%', maxWidth: 260 }}>
             <rect width="280" height="260" fill="#0f1829" rx="6"/>
-            {/* Laser source */}
-            <rect x="12" y="118" width="38" height="24"
+            
+            {/* Laser source on the right */}
+            <rect x="230" y="118" width="38" height="24"
                   fill="rgba(252,129,129,0.18)" stroke="#fc8181" strokeWidth="1.2" rx="3"/>
-            <text x="31" y="134" fill="#fc8181" fontSize="7"
+            <text x="249" y="134" fill="#fc8181" fontSize="7"
                   textAnchor="middle" fontFamily="DM Sans,sans-serif">Laser</text>
-            {/* Beam */}
-            <line x1="50" y1="130" x2="100" y2="130" stroke="#fc8181" strokeWidth="1.5"/>
-            {/* Grating */}
-            <rect x="100" y="105" width="10" height="50"
+            
+            {/* Main Laser Beam */}
+            <line x1="230" y1="130" x2="145" y2="130" stroke="#fc8181" strokeWidth="1.5"/>
+            
+            {/* Diffraction Grating in the middle */}
+            <rect x="135" y="105" width="10" height="50"
                   fill="rgba(99,179,237,0.12)" stroke="#63b3ed" strokeWidth="1.2" rx="1"/>
-            {[102, 105, 108].map(x => (
+            {[137, 140, 143].map(x => (
               <line key={x} x1={x} y1="108" x2={x} y2="152"
                     stroke="#63b3ed" strokeWidth="0.5" strokeDasharray="2,2"/>
             ))}
-            <text x="105" y="170" fill="#63b3ed" fontSize="6.5"
+            <text x="140" y="170" fill="#63b3ed" fontSize="6.5"
                   textAnchor="middle" fontFamily="DM Sans,sans-serif">Grating</text>
-            <text x="105" y="178" fill="#63b3ed" fontSize="6"
+            <text x="140" y="178" fill="#63b3ed" fontSize="6"
                   textAnchor="middle" fontFamily="DM Sans,sans-serif">N=1000 /cm</text>
-            {/* Screen */}
-            <rect x="210" y="90" width="8" height="80"
+            
+            {/* Screen on the left */}
+            <rect x="60" y="90" width="8" height="80"
                   fill="rgba(79,209,197,0.12)" stroke="#4fd1c5" strokeWidth="1.2" rx="1"/>
-            <text x="214" y="84" fill="#4fd1c5" fontSize="6.5"
+            <text x="64" y="84" fill="#4fd1c5" fontSize="6.5"
                   textAnchor="middle" fontFamily="DM Sans,sans-serif">Screen</text>
-            {/* 0th order */}
-            <circle cx="214" cy="130" r="3.5" fill="#fc8181"/>
-            <text x="224" y="133" fill="#f6ad55" fontSize="6" fontFamily="DM Mono,sans-serif">n=0</text>
-            {/* 1st order */}
-            <line x1="110" y1="130" x2="214" y2="105"
+            
+            {/* 0th order spot */}
+            <circle cx="64" cy="130" r="3.5" fill="#fc8181"/>
+            <text x="74" y="133" fill="#f6ad55" fontSize="6" fontFamily="DM Mono,sans-serif">n=0</text>
+            
+            {/* 1st order beams and spots */}
+            <line x1="135" y1="130" x2="64" y2="105"
                   stroke="#fc8181" strokeWidth="1" strokeDasharray="3,2" opacity="0.7"/>
-            <circle cx="214" cy="105" r="2.5" fill="#fc8181" opacity="0.8"/>
-            <text x="224" y="108" fill="#f6ad55" fontSize="6" fontFamily="DM Mono,sans-serif">n=1</text>
-            <line x1="110" y1="130" x2="214" y2="155"
+            <circle cx="64" cy="105" r="2.5" fill="#fc8181" opacity="0.8"/>
+            <text x="74" y="108" fill="#f6ad55" fontSize="6" fontFamily="DM Mono,sans-serif">n=1</text>
+            
+            <line x1="135" y1="130" x2="64" y2="155"
                   stroke="#fc8181" strokeWidth="1" strokeDasharray="3,2" opacity="0.7"/>
-            <circle cx="214" cy="155" r="2.5" fill="#fc8181" opacity="0.8"/>
-            <text x="224" y="158" fill="#f6ad55" fontSize="6" fontFamily="DM Mono,sans-serif">n=1</text>
-            {/* 2nd order */}
-            <line x1="110" y1="130" x2="214" y2="88"
+            <circle cx="64" cy="155" r="2.5" fill="#fc8181" opacity="0.8"/>
+            <text x="74" y="158" fill="#f6ad55" fontSize="6" fontFamily="DM Mono,sans-serif">n=1</text>
+            
+            {/* 2nd order beams and spots */}
+            <line x1="135" y1="130" x2="64" y2="88"
                   stroke="#fc8181" strokeWidth="0.8" strokeDasharray="3,2" opacity="0.4"/>
-            <circle cx="214" cy="88" r="1.8" fill="#fc8181" opacity="0.45"/>
-            <line x1="110" y1="130" x2="214" y2="168"
+            <circle cx="64" cy="88" r="1.8" fill="#fc8181" opacity="0.45"/>
+            
+            <line x1="135" y1="130" x2="64" y2="168"
                   stroke="#fc8181" strokeWidth="0.8" strokeDasharray="3,2" opacity="0.4"/>
-            <circle cx="214" cy="168" r="1.8" fill="#fc8181" opacity="0.45"/>
-            {/* D annotation */}
-            <line x1="110" y1="148" x2="210" y2="148" stroke="#4fd1c5" strokeWidth="0.8"/>
-            <text x="160" y="158" fill="#4fd1c5" fontSize="7.5"
-                  textAnchor="middle" fontFamily="DM Mono,monospace">D</text>
-            {/* x annotation */}
-            <line x1="222" y1="105" x2="222" y2="155" stroke="#f6ad55" strokeWidth="0.8"/>
-            <text x="236" y="133" fill="#f6ad55" fontSize="7.5" fontFamily="DM Mono,monospace">x</text>
+            <circle cx="64" cy="168" r="1.8" fill="#fc8181" opacity="0.45"/>
+
+            {/* Vertical Intensity Distribution Curve (left of screen) */}
+            <path d="M 55,90 C 55,100 40,103 40,105 C 40,107 55,110 55,120 C 55,125 15,128 15,130 C 15,132 55,135 55,140 C 55,150 40,153 40,155 C 40,157 55,160 55,170" 
+                  fill="none" stroke="#fc8181" strokeWidth="1" opacity="0.8"/>
+            <path d="M 55,90 C 55,100 40,103 40,105 C 40,107 55,110 55,120 C 55,125 15,128 15,130 C 15,132 55,135 55,140 C 55,150 40,153 40,155 C 40,157 55,160 55,170 L 55,170 L 55,90 Z" 
+                  fill="rgba(252,129,129,0.06)"/>
+
+            {/* L annotation */}
+            <line x1="135" y1="148" x2="68" y2="148" stroke="#4fd1c5" strokeWidth="0.8"/>
+            <text x="101" y="158" fill="#4fd1c5" fontSize="7.5"
+                  textAnchor="middle" fontFamily="DM Mono,monospace">L</text>
+            
+            {/* x annotation (center spot to upper first-order spot) */}
+            <line x1="52" y1="130" x2="52" y2="105" stroke="#f6ad55" strokeWidth="0.8"/>
+            <line x1="48" y1="130" x2="56" y2="130" stroke="#f6ad55" strokeWidth="0.8"/>
+            <line x1="48" y1="105" x2="56" y2="105" stroke="#f6ad55" strokeWidth="0.8"/>
+            <text x="38" y="121" fill="#f6ad55" fontSize="7.5" fontFamily="DM Mono,monospace">x</text>
           </svg>
         </div>
 
@@ -401,12 +524,12 @@ function Theory({ setTab }) {
               <span className="constant-value">1000 lines/cm</span>
             </div>
             <div className="constant-row">
-              <span className="constant-symbol">λ (He-Ne)</span>
-              <span className="constant-value">~632 nm = 6328 Å</span>
+              <span className="constant-symbol">λ (Laser)</span>
+              <span className="constant-value">405 - 632 nm</span>
             </div>
             <div className="constant-row">
               <span className="constant-symbol">n</span>
-              <span className="constant-value">1, 2 (diffraction order)</span>
+              <span className="constant-value">1, 2, 3 (diffraction order)</span>
             </div>
           </div>
           <button className="btn-start-simulation" onClick={() => setTab('simulation')}>
@@ -428,10 +551,8 @@ function Simulation() {
   const [D,      setD]      = useState(38)
   const [N,      setN]      = useState(1000)
   const [lambda, setLambda] = useState(632)
-
-  // Caliper state (separation in cm)
-  const [caliperSeparation, setCaliperSeparation] = useState(5.0)
-
+  const [selectedOrder, setSelectedOrder] = useState(1)
+  const [lConfirmed, setLConfirmed] = useState(false)
 
   // Observation table: 6 rows
   const [lVals, setLVals] = useState(() => {
@@ -458,6 +579,30 @@ function Simulation() {
     }
     return Array(6).fill('')
   })
+  const [orderVals, setOrderVals] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kinetix_exp03_sim_data')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed.orderVals) return parsed.orderVals
+      }
+    } catch (e) {
+      console.error(e)
+    }
+    return Array(6).fill('')
+  })
+  const [nGratingVals, setNGratingVals] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kinetix_exp03_sim_data')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed.nGratingVals) return parsed.nGratingVals
+      }
+    } catch (e) {
+      console.error(e)
+    }
+    return Array(6).fill('')
+  })
 
   // Results
   const [results, setResults] = useState(() => {
@@ -477,9 +622,9 @@ function Simulation() {
   // Auto-save simulation data on change
   useEffect(() => {
     localStorage.setItem('kinetix_exp03_sim_data', JSON.stringify({
-      lVals, xVals, results
+      lVals, xVals, orderVals, nGratingVals, results
     }))
-  }, [lVals, xVals, results])
+  }, [lVals, xVals, orderVals, nGratingVals, results])
 
   // Record target row
   const [recRow, setRecRow] = useState(0)
@@ -487,38 +632,48 @@ function Simulation() {
   // Draw whenever params change
   useEffect(() => {
     if (!canvasRef.current) return
-    const activeOrder = ROW_ORDERS[recRow]
-    drawDiffraction(canvasRef.current, { D, N, lambda, caliperSeparation, activeOrder })
-  }, [D, N, lambda, caliperSeparation, recRow])
+    drawDiffraction(canvasRef.current, { D, N, lambda, selectedOrder })
+  }, [D, N, lambda, selectedOrder])
 
-  // Auto-align the caliper separation to exact spot positions
-  const autoAlign = () => {
-    const activeOrder = ROW_ORDERS[recRow]
-    const lCm  = lambda * 1e-7
-    const sinT = activeOrder * N * lCm
-    if (sinT < 1) {
-      const tanT = sinT / Math.sqrt(1 - sinT * sinT)
-      const exactX = (D * tanT) * 2
-      setCaliperSeparation(exactX)
-    }
+  // Compute exact current x for display and recording
+  const lCm = lambda * 1e-7
+  const sinT = selectedOrder * N * lCm
+  let currentX = 0
+  if (sinT < 1) {
+    const tanT = sinT / Math.sqrt(1 - sinT * sinT)
+    currentX = D * tanT
   }
 
   const recordReading = () => {
     setXVals(prev => {
-      const n = [...prev]; n[recRow] = caliperSeparation.toFixed(3); return n
+      const n = [...prev]; n[recRow] = currentX.toFixed(3); return n
     })
     setLVals(prev => {
       const n = [...prev]; n[recRow] = D.toString(); return n
     })
+    setOrderVals(prev => {
+      const n = [...prev]; n[recRow] = selectedOrder.toString(); return n
+    })
+    setNGratingVals(prev => {
+      const n = [...prev]; n[recRow] = N.toString(); return n
+    })
+    // Auto-advance row if possible
+    if (recRow < 5) {
+      setRecRow(recRow + 1)
+    }
   }
 
-  const computedRows = ROW_ORDERS.map((order, i) => {
+  const computedRows = Array(6).fill().map((_, i) => {
     const L = parseFloat(lVals[i])
     const x = parseFloat(xVals[i])
-    if (isNaN(L) || isNaN(x) || L <= 0) return { theta: '—', sinT: '—', lam: '—' }
-    const theta = Math.atan(x / (2 * L)) * 180 / Math.PI
-    const sinT  = Math.sin(Math.atan(x / (2 * L)))
-    const lam   = sinT / (order * N)
+    const order = parseFloat(orderVals[i])
+    const N_val = parseFloat(nGratingVals[i])
+    if (isNaN(L) || isNaN(x) || isNaN(order) || isNaN(N_val) || L <= 0 || N_val <= 0 || order <= 0) {
+      return { theta: '—', sinT: '—', lam: '—' }
+    }
+    const theta = Math.atan(x / L) * 180 / Math.PI
+    const sinT  = Math.sin(Math.atan(x / L))
+    const lam   = sinT / (order * N_val)
     return {
       theta: theta.toFixed(3) + '°',
       sinT:  sinT.toFixed(4),
@@ -537,7 +692,11 @@ function Simulation() {
   const reset = () => {
     setLVals(Array(6).fill(''))
     setXVals(Array(6).fill(''))
+    setOrderVals(Array(6).fill(''))
+    setNGratingVals(Array(6).fill(''))
     setResults(null)
+    setRecRow(0)
+    setLConfirmed(false)
   }
 
   return (
@@ -549,10 +708,10 @@ function Simulation() {
         </div>
         <div className="sim-howto-grid">
           {[
-            'Adjust grating-screen distance D and grating lines N using sliders — watch dots move.',
-            'Adjust the Caliper Separation slider (and Fine Tune buttons) to align the golden caliper lines exactly with the diffracted spots on the screen.',
-            'Look at the Magnifier zooms to align the golden jaw lines perfectly with the center of the spots.',
-            'Select the target row (n=1 or n=2), then click 📌 Record Caliper Read. Click ⚡ Calculate All once all rows are filled.',
+            'Adjust distance L (D) using the slider, then lock it to confirm.',
+            'Select Grating lines N (lines/cm) using the slider once Distance L is locked.',
+            'Choose the Diffraction Order / Spot Number (1, 2, or 3) to view the spots and visual measurement line (x).',
+            'Select the target table row, then click 📌 Record Reading. Fill all rows and click ⚡ Calculate All.',
           ].map((s, i) => (
             <div key={i} className="sim-howto-step">
               <span className="sim-howto-num">{String(i+1).padStart(2,'0')}</span>
@@ -574,16 +733,15 @@ function Simulation() {
                     style={{ borderRadius: 8, maxWidth: '100%', display: 'block', margin: '0 auto', cursor: 'crosshair' }}/>
           </div>
           <div className="sim-readout-bar">
-            <div className="sim-readout-hint">CALIPER POSITION READING</div>
-            <div className="sim-readout-value" style={{ color: '#d97706' }}>
-              {caliperSeparation.toFixed(3)} <span style={{ fontSize: '0.85rem', color: '#64748b' }}>cm</span>
+            <div className="sim-readout-hint">MEASURED DISTANCE (x)</div>
+            <div className="sim-readout-value" style={{ color: '#fbbf24' }}>
+              {currentX.toFixed(3)} <span style={{ fontSize: '0.85rem', color: '#64748b' }}>cm</span>
             </div>
-            <div className="sim-readout-hint">Align caliper jaws with upper/lower spots of selected order</div>
+            <div className="sim-readout-hint">Distance from center spot to order {selectedOrder} spot</div>
           </div>
           <div className="sim-jump-bar">
             <span className="sim-jump-label">ASSISTANCE:</span>
-            <button className="sim-jump-btn" onClick={autoAlign} style={{ background: 'rgba(251,191,36,0.1)', borderColor: 'rgba(251,191,36,0.35)', color: '#d97706' }}>⚡ Auto-Align Caliper</button>
-            <button className="sim-jump-btn" onClick={() => setCaliperSeparation(5.0)}>↺ Reset Caliper</button>
+            <button className="sim-jump-btn" onClick={() => { setD(38); setN(1000); setLambda(632); setSelectedOrder(1); setLConfirmed(false); }} style={{ background: 'rgba(59, 130, 246, 0.1)', borderColor: 'rgba(59, 130, 246, 0.35)', color: '#3b82f6', cursor: 'pointer' }}>↺ Reset Parameters</button>
           </div>
         </div>
 
@@ -591,13 +749,64 @@ function Simulation() {
         <div>
           <div className="sim-sidebar-card">
             <div className="sim-sidebar-title">⚙️ PARAMETERS</div>
-            <div className="sim-param-row">
-              <div className="sim-param-label"><span>Grating-Screen D (cm)</span><span className="sim-param-val">{D} cm</span></div>
-              <input type="range" min={20} max={70} step={1} value={D} onChange={e => setD(+e.target.value)}/>
+            <div className="sim-param-row" style={{ opacity: lConfirmed ? 0.75 : 1 }}>
+              <div className="sim-param-label">
+                <span style={{ fontWeight: 'bold', color: lConfirmed ? '#64748b' : '#3b82f6' }}>
+                  Step 1: Distance L (D)
+                </span>
+                <span className="sim-param-val">{D} cm</span>
+              </div>
+              <input 
+                type="range" 
+                min={20} 
+                max={70} 
+                step={1} 
+                value={D} 
+                disabled={lConfirmed}
+                onChange={e => setD(+e.target.value)}
+              />
+              {!lConfirmed ? (
+                <button 
+                  className="btn-primary-action" 
+                  style={{ width: '100%', marginTop: 8, padding: '6px 12px', fontSize: '0.8rem', cursor: 'pointer' }}
+                  onClick={() => setLConfirmed(true)}
+                >
+                  Confirm & Lock Distance L ({D} cm)
+                </button>
+              ) : (
+                <button 
+                  className="btn-secondary-action" 
+                  style={{ width: '100%', marginTop: 8, padding: '4px 12px', fontSize: '0.75rem', cursor: 'pointer' }}
+                  onClick={() => setLConfirmed(false)}
+                >
+                  Modify Distance L
+                </button>
+              )}
             </div>
-            <div className="sim-param-row">
-              <div className="sim-param-label"><span>N (lines/cm)</span><span className="sim-param-val">{N}</span></div>
-              <input type="range" min={500} max={2000} step={100} value={N} onChange={e => setN(+e.target.value)}/>
+
+            <div style={{ height: 1, background: '#334155', margin: '16px 0' }} />
+
+            <div className="sim-param-row" style={{ opacity: lConfirmed ? 1 : 0.5 }}>
+              <div className="sim-param-label">
+                <span style={{ fontWeight: 'bold', color: lConfirmed ? '#10b981' : '#64748b' }}>
+                  Step 2: N (lines/cm)
+                </span>
+                <span className="sim-param-val">{lConfirmed ? N : '—'}</span>
+              </div>
+              <input 
+                type="range" 
+                min={500} 
+                max={2000} 
+                step={100} 
+                value={N} 
+                disabled={!lConfirmed}
+                onChange={e => setN(+e.target.value)}
+              />
+              {!lConfirmed && (
+                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 4, fontStyle: 'italic' }}>
+                  Please lock Distance L above to enable Grating lines N.
+                </div>
+              )}
             </div>
           </div>
 
@@ -619,48 +828,60 @@ function Simulation() {
           </div>
 
           <div className="sim-sidebar-card">
-            <div className="sim-sidebar-title">📐 VERNIER CALIPER</div>
-            <div className="sim-param-row">
-              <div className="sim-param-label">
-                <span>Caliper separation (x)</span>
-                <span className="sim-param-val" style={{ color: '#fbbf24', fontWeight: 'bold' }}>{caliperSeparation.toFixed(3)} cm</span>
+            <div className="sim-sidebar-title">📌 MEASUREMENT & RECORD</div>
+            
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+                Diffraction Order (n)
               </div>
-              <input 
-                type="range" 
-                min="0.0" 
-                max="40.0" 
-                step="0.01" 
-                value={caliperSeparation} 
-                onChange={e => setCaliperSeparation(parseFloat(e.target.value))} 
-              />
+              <div style={{ display: 'flex', gap: 6 }}>
+                {[1, 2, 3].map(orderNum => (
+                  <button
+                    key={orderNum}
+                    className="sim-jump-btn"
+                    style={{
+                      flex: 1,
+                      background: selectedOrder === orderNum ? 'var(--accent)' : 'var(--surface2)',
+                      borderColor: selectedOrder === orderNum ? 'var(--accent)' : 'var(--border2)',
+                      color: selectedOrder === orderNum ? '#ffffff' : 'var(--text-muted)',
+                      fontWeight: selectedOrder === orderNum ? 'bold' : 'normal',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => setSelectedOrder(orderNum)}
+                  >
+                    Order {orderNum} ({orderNum === 1 ? '3 dots' : orderNum === 2 ? '5 dots' : '7 dots'})
+                  </button>
+                ))}
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 4, justifyContent: 'space-between', marginBottom: 12 }}>
-              <button className="sim-jump-btn" onClick={() => setCaliperSeparation(prev => Math.max(0, parseFloat((prev - 0.05).toFixed(3))))}>-0.05</button>
-              <button className="sim-jump-btn" onClick={() => setCaliperSeparation(prev => Math.max(0, parseFloat((prev - 0.01).toFixed(3))))}>-0.01</button>
-              <span style={{ fontSize: '10px', color: '#64748b', alignSelf: 'center' }}>Fine Tune</span>
-              <button className="sim-jump-btn" onClick={() => setCaliperSeparation(prev => Math.min(40, parseFloat((prev + 0.01).toFixed(3))))}>+0.01</button>
-              <button className="sim-jump-btn" onClick={() => setCaliperSeparation(prev => Math.min(40, parseFloat((prev + 0.05).toFixed(3))))}>+0.05</button>
-            </div>
-          </div>
 
-          <div className="sim-sidebar-card">
-            <div className="sim-sidebar-title">
-              <span>📌 RECORD READING</span>
-              <span style={{ color: '#94a3b8' }}>↑</span>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Measured Distance (x)
+              </div>
+              <div className="sim-record-display" style={{ color: '#fbbf24', fontSize: '1.4rem', fontWeight: 'bold' }}>
+                {currentX.toFixed(3)} <span style={{ fontSize: '0.9rem', color: '#64748b' }}>cm</span>
+              </div>
+              <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 2 }}>
+                Distance from center spot to order {selectedOrder} spot
+              </div>
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CALIPER READOUT</div>
-            <div className="sim-record-display" style={{ color: '#fbbf24' }}>{caliperSeparation.toFixed(3)} <span style={{ fontSize: '0.9rem', color: '#64748b' }}>cm</span></div>
-            <div className="sim-record-selects">
-              <select className="sim-select" style={{ gridColumn: 'span 2' }} value={recRow} onChange={e => setRecRow(+e.target.value)}>
-                {ROW_ORDERS.map((n, i) => (
+
+            <div className="sim-record-selects" style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                Target Table Row
+              </div>
+              <select className="sim-select" style={{ width: '100%' }} value={recRow} onChange={e => setRecRow(+e.target.value)}>
+                {Array(6).fill().map((_, i) => (
                   <option key={i} value={i}>
-                    Row {i+1} (n={n})
+                    Row {i + 1} {lVals[i] ? `(L=${lVals[i]} cm, n=${orderVals[i]})` : '(Empty)'}
                   </option>
                 ))}
               </select>
             </div>
-            <button className="btn-record" onClick={recordReading}>
-              <span style={{ color: '#ef4444' }}>📌</span> Record Caliper Read
+
+            <button className="btn-record" style={{ width: '100%', cursor: 'pointer' }} onClick={recordReading}>
+              <span style={{ color: '#ef4444' }}>📌</span> Record Reading to Row {recRow + 1}
             </button>
           </div>
         </div>
@@ -672,10 +893,9 @@ function Simulation() {
           <div className="sim-card-title">
             <span style={{ display: 'inline-flex', fontStyle: 'normal', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '50%', background: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', fontSize: '0.85rem' }}>📄</span>
             Observation Table &nbsp;
-            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 400 }}>N = {N} lines/cm</span>
           </div>
           <div className="sim-btn-group">
-            <button className="btn-secondary-action" onClick={reset}>↺ Reset</button>
+            <button className="btn-secondary-action" onClick={reset}>↺ Reset Table</button>
             <button className="btn-primary-action" onClick={calcAll}>⚡ Calculate All</button>
           </div>
         </div>
@@ -685,24 +905,32 @@ function Simulation() {
               <tr>
                 <th>SR.</th>
                 <th>L (CM)</th>
-                <th>ORDER (N)</th>
-                <th>X (CM)</th>
-                <th>θ = tan⁻¹(X/2L)</th>
+                <th>N (LINES/CM)</th>
+                <th>ORDER (n)</th>
+                <th>x (CM)</th>
+                <th>θ = tan⁻¹(x/L)</th>
                 <th>sin θ</th>
                 <th>λ = sin θ / nN (CM)</th>
               </tr>
             </thead>
             <tbody>
-              {ROW_ORDERS.map((order, i) => (
-                <tr key={i}>
+              {Array(6).fill().map((_, i) => (
+                <tr key={i} className={recRow === i ? 'active-row' : ''} style={{ background: recRow === i ? 'rgba(59,130,246,0.05)' : '' }}>
                   <td>{i + 1}</td>
                   <td>
                     <input type="number" step="0.1" placeholder="L cm" className="sim-table-input"
                            value={lVals[i]} onChange={e => setLVals(prev => { const n = [...prev]; n[i] = e.target.value; return n })}/>
                   </td>
-                  <td style={{ fontWeight: 700, color: '#0f172a' }}>{order}</td>
                   <td>
-                    <input type="number" step="0.01" placeholder="x cm" className="sim-table-input"
+                    <input type="number" step="100" placeholder="N lines/cm" className="sim-table-input"
+                           value={nGratingVals[i]} onChange={e => setNGratingVals(prev => { const n = [...prev]; n[i] = e.target.value; return n })}/>
+                  </td>
+                  <td>
+                    <input type="number" min="1" max="3" placeholder="Order n" className="sim-table-input"
+                           value={orderVals[i]} onChange={e => setOrderVals(prev => { const n = [...prev]; n[i] = e.target.value; return n })}/>
+                  </td>
+                  <td>
+                    <input type="number" step="0.001" placeholder="x cm" className="sim-table-input"
                            value={xVals[i]} onChange={e => setXVals(prev => { const n = [...prev]; n[i] = e.target.value; return n })}/>
                   </td>
                   <td style={{ fontFamily: 'DM Mono, monospace', color: '#64748b' }}>{computedRows[i].theta}</td>
@@ -730,16 +958,15 @@ function Simulation() {
               <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.8 }}>
                 • Mean Wavelength (cm): <code>{results.meanCm} cm</code><br/>
                 • Wavelength in nanometres: <code>{(results.meanA / 10).toFixed(1)} nm</code><br/>
-                • Expected (He-Ne / Sodium reference): <code>6328 Å / 5893 Å</code>
+                • Expected (Laser reference): <code>{lambda} nm</code>
               </div>
             </div>
             <div className="sim-calc-box">
-              <div className="sim-calc-title">Calculated Laser Wavelength</div>
+              <div className="sim-calc-title">Calculated Wavelength</div>
               <div className="sim-calc-formula">λ = sin θ ÷ (n × N)</div>
               <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#2563eb', fontFamily: 'DM Mono, monospace', marginTop: 6 }}>
                 {results.meanA} Å
               </div>
-              <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 4 }}>N = {N} lines/cm</div>
             </div>
           </div>
         </div>
@@ -780,13 +1007,13 @@ const QUESTIONS = [
     q: 'If laser wavelength increases, what happens to the spot separation x?',
     opts: ['x decreases', 'x stays the same', 'x increases', 'x becomes zero'],
     ans: 2,
-    exp: 'sinθ = nNλ, so longer λ → larger θ → larger x = 2D·tanθ. The spots move further apart with increasing wavelength.',
+    exp: 'sinθ = nNλ, so longer λ → larger θ → larger x = L·tanθ. The spots move further apart with increasing wavelength.',
   },
   {
     q: 'What approximation is used when sinθ ≈ tanθ in this experiment?',
     opts: ['The screen is very close to the grating', 'The diffraction angle θ is small (small angle approximation)', 'N is very large', 'λ is very small compared to slit width'],
     ans: 1,
-    exp: 'For small angles, sinθ ≈ tanθ ≈ x/2D. This approximation is valid when the screen is far enough that 1st order angles remain small.',
+    exp: 'For small angles, sinθ ≈ tanθ ≈ x/L. This approximation is valid when the screen is far enough that 1st order angles remain small.',
   },
 ]
 
@@ -797,7 +1024,7 @@ const FLASHCARDS = [
   },
   {
     q: 'How is the diffraction angle θ calculated experimentally?',
-    a: 'θ = tan⁻¹(x / 2D)\nwhere x = distance between two symmetric n-th order dots\nD = grating to screen distance',
+    a: 'θ = tan⁻¹(x / L)\nwhere x = distance from center spot to selected order spot\nL = grating to screen distance',
   },
   {
     q: 'Why must you never look directly into a laser source?',
@@ -809,7 +1036,7 @@ const FLASHCARDS = [
   },
   {
     q: 'What is the formula to find wavelength λ from experiment?',
-    a: 'λ = sinθ / (nN)\nwhere n = order, N = lines/cm\nsinθ = x / √(x² + 4D²) ≈ x / 2D for small angles',
+    a: 'λ = sinθ / (nN)\nwhere n = order, N = lines/cm\nsinθ = x / √(x² + L²) ≈ x / L for small angles',
   },
 ]
 
@@ -889,8 +1116,7 @@ function Test({ setTab }) {
   }
 
   const recordedCount = simData ? (
-    (simData.lVals?.filter(v => v !== '').length || 0) +
-    (simData.xVals?.filter(v => v !== '').length || 0)
+    simData.lVals?.filter(v => v !== '').length || 0
   ) : 0
 
   return (
@@ -935,7 +1161,7 @@ function Test({ setTab }) {
                   </div>
                   <div className="dash-result-item">
                     <div className="dash-result-label">Readings</div>
-                    <div className="dash-result-value">{recordedCount}/12</div>
+                    <div className="dash-result-value">{recordedCount}/6</div>
                   </div>
                 </div>
                 <button className="dash-btn dash-btn-secondary" onClick={() => setTab('simulation')}>
